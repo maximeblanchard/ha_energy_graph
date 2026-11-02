@@ -1,6 +1,7 @@
 # Graphique d'énergie (`ha_energy_graph`)
 
-[![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maximeblanchard&repository=ha_energy_graph&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maximeblanchard&repository=ha_energy_graph&category=integration)
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_energy_graph)
 
 Intégration Home Assistant sans dépendances générant un **camembert** et un **graphique en aires empilées** de la consommation du jour, accompagnés d'une **page web interactive** (zoom, pan, historique par date, infobulles détaillées).
 
