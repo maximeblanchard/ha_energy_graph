@@ -7,8 +7,8 @@ from pathlib import Path
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED, Platform
+from homeassistant.core import CoreState, HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import EnergyCoordinator
@@ -20,6 +20,28 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.SENSOR, Platform.IMAGE]
 CARD_URL = "/ha_energy_graph_card.js"
 FRONTEND_FILE = Path(__file__).parent / "frontend" / "ha-energy-graph-card.js"
+
+
+async def _async_register_lovelace_resource(hass: HomeAssistant) -> None:
+    """Enregistre automatiquement la ressource Lovelace si en mode storage."""
+    lovelace = hass.data.get("lovelace")
+    if not lovelace or not hasattr(lovelace, "resources"):
+        return
+    try:
+        if not lovelace.resources.loaded:
+            await lovelace.resources.async_load()
+        url = f"{CARD_URL}?v=1.8.0"
+        for resource in lovelace.resources.async_items():
+            if resource.get("url", "").startswith(CARD_URL):
+                if resource.get("url") != url:
+                    await lovelace.resources.async_update_item(
+                        resource["id"], {"res_type": "module", "url": url}
+                    )
+                return
+        await lovelace.resources.async_create_item({"res_type": "module", "url": url})
+        _LOGGER.info("Ressource Lovelace enregistrée automatiquement : %s", url)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Impossible d'enregistrer la ressource Lovelace : %s", err)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -37,6 +59,14 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
         add_extra_js_url(hass, f"{CARD_URL}?v=1.8.0")
 
+        async def _register_fe(_event=None) -> None:
+            await _async_register_lovelace_resource(hass)
+
+        if hass.state == CoreState.running:
+            hass.async_create_task(_register_fe())
+        else:
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _register_fe)
+
     return True
 
 
@@ -47,6 +77,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+
+    hass.async_create_task(_async_register_lovelace_resource(hass))
     return True
 
 
