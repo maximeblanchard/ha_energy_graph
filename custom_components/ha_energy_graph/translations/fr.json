@@ -1,0 +1,113 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Graphique d'énergie",
+        "description": "Nom et capteur d'énergie totale de la maison (sert à calculer « Autre »). Les appareils s'ajoutent ensuite avec « Configurer ».",
+        "data": {
+          "name": "Nom",
+          "total_entity": "Capteur d'énergie totale de la maison (optionnel)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Appareils suivis",
+        "description": "Ajoutez autant d'appareils que nécessaire, puis choisissez « Enregistrer et terminer ».",
+        "menu_options": {
+          "add_energy": "Ajouter un compteur d'énergie (cumulatif Zigbee, ou remis à zéro chaque jour comme Tapo)",
+          "add_power": "Ajouter un capteur de puissance (W)",
+          "add_fixed": "Ajouter une consommation fixe à répartir sur 24 h (ex. VMC)",
+          "remove_device": "Supprimer des appareils",
+          "settings": "Capteur total et fréquence",
+          "finish": "Enregistrer et terminer",
+          "add_light": "Ajouter des lumières (puissance modulée selon la luminosité quand elles sont allumées)"
+        }
+      },
+      "add_energy": {
+        "title": "Compteur d'énergie",
+        "description": "Capteurs d'énergie (kWh/Wh) : compteur cumulatif ou remis à zéro chaque jour. Ils doivent avoir une state_class total ou total_increasing.",
+        "data": {
+          "entity_id": "Capteur",
+          "name": "Nom affiché (facultatif)",
+          "category": "Catégorie"
+        }
+      },
+      "add_power": {
+        "title": "Capteur de puissance",
+        "description": "Capteurs de puissance (W) avec state_class measurement.",
+        "data": {
+          "entity_id": "Capteur",
+          "name": "Nom affiché (facultatif)",
+          "category": "Catégorie"
+        }
+      },
+      "add_fixed": {
+        "title": "Consommation fixe",
+        "description": "Énergie sur 24 h, répartie en continu (ex. 150 Wh/jour = 6,25 W).",
+        "data": {
+          "name": "Nom",
+          "wh_per_day": "Énergie par jour",
+          "category": "Catégorie"
+        }
+      },
+      "remove_device": {
+        "title": "Supprimer des appareils",
+        "data": {
+          "remove": "Appareils à supprimer"
+        }
+      },
+      "settings": {
+        "title": "Réglages",
+        "data": {
+          "total_entity": "Capteur d'énergie totale de la maison",
+          "update_minutes": "Fréquence de mise à jour (multiple de 5 min, calée sur les statistiques de Home Assistant)",
+          "smooth_hours": "Lissage des compteurs : écart maximal entre deux paliers (0 = désactivé)",
+          "image_scale": "Échelle des images d'aires",
+          "image_group": "Regrouper les aires par catégorie (images)",
+          "spread_min": "Palier isolé d'un compteur : étalé sur les X dernières minutes (0 = pas d'étalement)",
+          "standby_wh": "Veille : un palier jusqu'à X Wh (inclus) est étalé depuis le palier précédent ou minuit (0 = désactivé)"
+        },
+        "description": "Un compteur qui monte par paliers (0,01 ou 0,1 kWh) est lissé : chaque palier est réparti sur le temps écoulé depuis le précédent, si cet écart ne dépasse pas la valeur ci-dessous."
+      },
+      "add_light": {
+        "title": "Lumières",
+        "description": "Choisissez une ou plusieurs lumières ayant la même puissance maximale (W à 100 % de luminosité). La puissance est automatiquement modulée selon la luminosité (ex. 50 % de luminosité = 50 % de puissance). Toutes les ampoules sont additionnées en une seule couche « Ampoules » dans les graphiques. Pour changer une puissance, supprimez la lumière puis ajoutez-la de nouveau.",
+        "data": {
+          "entity_id": "Lumières",
+          "watts": "Puissance à 100 % de luminosité"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entité introuvable.",
+      "already_configured": "Ce capteur est déjà ajouté.",
+      "bad_state_class_energy": "Ce capteur n'a pas de state_class total ou total_increasing : Home Assistant n'en garde pas de statistiques.",
+      "bad_state_class_power": "Ce capteur n'a pas la state_class measurement."
+    }
+  },
+  "selector": {
+    "category": {
+      "options": {
+        "informatique": "Informatique",
+        "multimedia": "Multimédia / Loisirs",
+        "eclairage": "Éclairage",
+        "cuisine": "Cuisine",
+        "chauffage": "Chauffage / Climatisation",
+        "eau_chaude": "Eau chaude",
+        "froid": "Froid (frigo, congélateur)",
+        "ventilation": "Ventilation / VMC",
+        "bien_etre": "Piscine / Spa",
+        "divers": "Divers"
+      }
+    },
+    "image_scale": {
+      "options": {
+        "sqrt": "Compressée (√) : lisible à faible consommation",
+        "lin": "Linéaire"
+      }
+    }
+  }
+}

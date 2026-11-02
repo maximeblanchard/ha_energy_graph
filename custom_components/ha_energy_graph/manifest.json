@@ -1,0 +1,18 @@
+{
+  "domain": "ha_energy_graph",
+  "name": "Graphique d'énergie",
+  "codeowners": [
+    "@maximeblanchard"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "recorder"
+  ],
+  "documentation": "https://github.com/maximeblanchard/ha_energy_graph",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/maximeblanchard/ha_energy_graph/issues",
+  "requirements": [],
+  "version": "1.7.0"
+}

@@ -1,0 +1,113 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy graph",
+        "description": "Name and whole-house energy sensor (used to compute “Other”). Add devices afterwards with “Configure”.",
+        "data": {
+          "name": "Name",
+          "total_entity": "Whole-house energy sensor (optional)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tracked devices",
+        "description": "Add as many devices as needed, then choose “Save and finish”.",
+        "menu_options": {
+          "add_energy": "Add an energy meter (cumulative Zigbee, or reset daily like Tapo)",
+          "add_power": "Add a power sensor (W)",
+          "add_fixed": "Add a fixed consumption spread over 24 h (e.g. ventilation)",
+          "remove_device": "Remove devices",
+          "settings": "Total sensor and refresh rate",
+          "finish": "Save and finish",
+          "add_light": "Add lights (power scaled by brightness while they are on)"
+        }
+      },
+      "add_energy": {
+        "title": "Energy meter",
+        "description": "Energy sensors (kWh/Wh): cumulative or reset daily. They need a state_class of total or total_increasing.",
+        "data": {
+          "entity_id": "Sensor",
+          "name": "Display name (optional)",
+          "category": "Category"
+        }
+      },
+      "add_power": {
+        "title": "Power sensor",
+        "description": "Power sensors (W) with state_class measurement.",
+        "data": {
+          "entity_id": "Sensor",
+          "name": "Display name (optional)",
+          "category": "Category"
+        }
+      },
+      "add_fixed": {
+        "title": "Fixed consumption",
+        "description": "Energy per 24 h, spread evenly over the day.",
+        "data": {
+          "name": "Name",
+          "wh_per_day": "Energy per day",
+          "category": "Category"
+        }
+      },
+      "remove_device": {
+        "title": "Remove devices",
+        "data": {
+          "remove": "Devices to remove"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "data": {
+          "total_entity": "Whole-house energy sensor",
+          "update_minutes": "Refresh rate (multiple of 5 min, aligned with Home Assistant statistics)",
+          "smooth_hours": "Counter smoothing: maximum gap between two steps (0 = off)",
+          "image_scale": "Area image scale",
+          "image_group": "Group areas by category (images)",
+          "spread_min": "Isolated counter step: spread over the previous X minutes (0 = no spreading)",
+          "standby_wh": "Standby: a step up to X Wh (inclusive) is spread since the previous step or midnight (0 = off)"
+        },
+        "description": "A counter that rises in steps (0.01 or 0.1 kWh) is smoothed: each step is spread over the time since the previous one, as long as that gap does not exceed the value below."
+      },
+      "add_light": {
+        "title": "Lights",
+        "description": "Pick one or more lights with the same maximum power (W at 100% brightness). Power is automatically scaled according to brightness (e.g. 50% brightness = 50% power). All bulbs are summed into a single “Ampoules” layer in the charts. To change a power, remove the light and add it again.",
+        "data": {
+          "entity_id": "Lights",
+          "watts": "Power at 100% brightness"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entity not found.",
+      "already_configured": "This sensor is already added.",
+      "bad_state_class_energy": "No state_class total or total_increasing: Home Assistant keeps no statistics for it.",
+      "bad_state_class_power": "This sensor does not have state_class measurement."
+    }
+  },
+  "selector": {
+    "category": {
+      "options": {
+        "informatique": "Computing",
+        "multimedia": "Media / Leisure",
+        "eclairage": "Lighting",
+        "cuisine": "Kitchen",
+        "chauffage": "Heating / Cooling",
+        "eau_chaude": "Hot water",
+        "froid": "Cold (fridge, freezer)",
+        "ventilation": "Ventilation",
+        "bien_etre": "Pool / Spa",
+        "divers": "Misc"
+      }
+    },
+    "image_scale": {
+      "options": {
+        "sqrt": "Compressed (√): readable at low consumption",
+        "lin": "Linear"
+      }
+    }
+  }
+}
