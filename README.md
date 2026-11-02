@@ -38,6 +38,36 @@ Une fois l'intégration ajoutée, cliquez sur **Configurer** pour gérer vos app
 
 ---
 
+## 🃏 Carte Lovelace native (`custom:ha-energy-graph-card`)
+
+L'intégration embarque automatiquement sa propre carte Lovelace interactive !  
+Dès l'installation ou la mise à jour de l'intégration, la carte est **automatiquement injectée** dans vos tableaux de bord (aucune manipulation de ressource requise).
+
+Pour l'ajouter à votre tableau de bord :
+1. Cliquez sur **Modifier le tableau de bord** > **Ajouter une carte**.
+2. Cherchez **« Graphique d'énergie »** dans la liste, ou ajoutez-la en mode YAML :
+
+```yaml
+type: custom:ha-energy-graph-card
+# Options facultatives :
+view: both        # 'both' (les deux), 'area' (aires seulement) ou 'pie' (camembert seulement)
+title: "Énergie"  # Titre personnalisé de la carte
+```
+
+### Fonctionnalités de la carte :
+- **Onglets en en-tête :** basculez instantanément entre `Tout`, `Aires` et `Camembert`.
+- **Navigation par date :** parcourez n'importe quel jour passé avec les flèches ◀ ▶ ou le sélecteur calendrier.
+- **Aires empilées interactives :**
+  - Sélecteurs de résolution (5 min à 1 h) et de lissage.
+  - Échelle linéaire ou compressée ($\sqrt{x}$) pour faire ressortir les veilles face aux gros pics.
+  - Bouton de regroupement par catégorie de couleur.
+  - Zoom & déplacement à la souris ou au doigt sur mobile (sélection rectangulaire, boutons $+/-$, Ctrl+molette).
+  - Infobulle flottante détaillée avec horodatage, liste triée des appareils et total en Watts.
+  - Légende cliquable pour masquer/afficher un appareil individuellement.
+- **Camembert dynamique :** répartition en pourcentages et kWh avec infobulles au survol.
+
+---
+
 ## 📊 Entités créées
 
 - **Images SVG (mises à jour automatiquement) :**
