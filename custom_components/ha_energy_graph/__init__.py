@@ -1,6 +1,7 @@
 """Intégration Energy Breakdown : camembert + aires empilées de la conso du jour."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -25,6 +26,12 @@ FRONTEND_FILE = Path(__file__).parent / "frontend" / "ha-energy-graph-card.js"
 async def _async_register_lovelace_resource(hass: HomeAssistant) -> None:
     """Enregistre automatiquement la ressource Lovelace si en mode storage."""
     lovelace = hass.data.get("lovelace")
+    if not lovelace:
+        for _ in range(10):
+            await asyncio.sleep(1)
+            lovelace = hass.data.get("lovelace")
+            if lovelace:
+                break
     if not lovelace or not hasattr(lovelace, "resources"):
         return
     try:
