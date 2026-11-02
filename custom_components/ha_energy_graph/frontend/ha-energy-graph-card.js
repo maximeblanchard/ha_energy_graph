@@ -1060,7 +1060,21 @@
   }
 
   // Déclaration du custom card pour Home Assistant
-  customElements.define('ha-energy-graph-card', HaEnergyGraphCard);
+  // Le script est chargé très tôt (add_extra_js_url), avant que le frontend de HA installe son
+  // polyfill de registre « scoped ». Une définition faite avant ne serait pas visible par
+  // customElements.get() (et HA afficherait « Custom element doesn't exist »). On attend donc
+  // que l'application soit définie, puis on enregistre la carte dans le registre courant.
+  const CARD_TAG = 'ha-energy-graph-card';
+  const registerCard = () => {
+    const registry = window.customElements;
+    if (!registry.get(CARD_TAG)) registry.define(CARD_TAG, HaEnergyGraphCard);
+  };
+  if (window.customElements.get('home-assistant')) {
+    registerCard();
+  } else {
+    window.customElements.whenDefined('home-assistant').then(registerCard);
+    setTimeout(registerCard, 15000); // filet de sécurité, sans effet si déjà défini
+  }
 
   window.customCards = window.customCards || [];
   window.customCards.push({
