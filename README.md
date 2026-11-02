@@ -11,16 +11,10 @@ Intégration Home Assistant sans dépendances générant un **camembert** et un 
 
 ### Méthode 1 : Via HACS (recommandé)
 
-1. Cliquez sur le badge ci-dessous pour ouvrir directement le dépôt dans HACS :
-
-   [![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maximeblanchard&repository=ha_energy_graph&category=integration)
-
-   *(Ou dans HACS > Menu 3 points > **Dépôts personnalisés** > URL : `https://github.com/maximeblanchard/ha_energy_graph`, Type : **Intégration**)*.
+1. Cliquez sur le bouton **Ouvrir dans HACS** en haut de cette page pour ajouter le dépôt *(ou dans HACS > Menu 3 points > **Dépôts personnalisés** > URL : `https://github.com/maximeblanchard/ha_energy_graph`, Type : **Intégration**)*.
 2. Cliquez sur **Télécharger**.
-3. Redémarrez Home Assistant.
-4. Cliquez sur **Ajouter l'intégration** :
-
-   [![Ajouter l'intégration dans Home Assistant](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_energy_graph)
+3. **Redémarrez Home Assistant**.
+4. Cliquez sur le bouton **Ajouter l'intégration** en haut de cette page *(ou allez dans **Paramètres** > **Appareils et services** > **Ajouter une intégration** > recherchez **« Graphique d'énergie »**)*.
 
 ---
 
