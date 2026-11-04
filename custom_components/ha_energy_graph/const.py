@@ -36,16 +36,16 @@ BUCKET_SECONDS = 300  # résolution des statistiques court terme du recorder
 # clé: (libellé, teinte HSL en degrés, saturation)
 # L'ordre de ce dict est l'ordre d'empilement dans les graphiques.
 CATEGORIES: dict[str, tuple[str, int, float]] = {
-    "informatique": ("Informatique", 225, 0.85),
-    "multimedia": ("Multimédia / Loisirs", 205, 0.90),
-    "eclairage": ("Éclairage", 280, 0.80),
-    "cuisine": ("Cuisine", 8, 0.90),
-    "chauffage": ("Chauffage / Climatisation", 24, 0.95),
-    "eau_chaude": ("Eau chaude", 145, 0.95),
-    "froid": ("Froid (frigo, congélateur)", 188, 0.95),
-    "ventilation": ("Ventilation / VMC", 165, 0.90),
-    "bien_etre": ("Piscine / Spa", 100, 0.85),
-    "divers": ("Divers", 40, 0.45),
+    "informatique": ("Informatique", 220, 0.85),
+    "multimedia": ("Multimédia / Loisirs", 170, 0.85),
+    "eclairage": ("Éclairage", 50, 0.95),
+    "cuisine": ("Cuisine", 340, 0.85),
+    "chauffage": ("Chauffage / Climatisation", 28, 0.95),
+    "eau_chaude": ("Eau chaude", 130, 0.80),
+    "froid": ("Froid (frigo, congélateur)", 195, 0.90),
+    "ventilation": ("Ventilation / VMC", 262, 0.75),
+    "bien_etre": ("Piscine / Spa", 85, 0.80),
+    "divers": ("Divers", 35, 0.40),
 }
 
 OTHER_LABEL = "Autre"

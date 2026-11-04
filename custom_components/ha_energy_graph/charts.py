@@ -24,11 +24,24 @@ STYLE = """<style>
 </style>"""
 
 
+# Luminosités en dents de scie : deux appareils consécutifs d'une même catégorie sont toujours bien contrastés
+_LIGHT_STEPS = (0.32, 0.64, 0.45, 0.74, 0.38, 0.58)
+
+
 def category_color(category: str, index: int, count: int) -> str:
-    """Couleur d'un appareil : même teinte par catégorie, luminosité variable."""
+    """Couleur d'un appareil : une famille de teinte par catégorie, avec un net écart entre voisins.
+
+    Dans une catégorie, la teinte se décale légèrement et la luminosité alterne (dents de scie),
+    ce qui évite les dégradés quasi identiques d'une part à l'autre du camembert.
+    """
     _, hue, sat = CATEGORIES.get(category, CATEGORIES["divers"])
-    light = 0.45 if count <= 1 else 0.30 + 0.40 * index / (count - 1)
-    r, g, b = colorsys.hls_to_rgb(hue / 360, light, sat)
+    if count <= 1:
+        h, light = float(hue), 0.50
+    else:
+        spread = min(14.0 * (count - 1), 40.0)  # étendue totale de teinte autour de la catégorie (°)
+        h = hue + spread * (index / (count - 1) - 0.5)
+        light = _LIGHT_STEPS[index % len(_LIGHT_STEPS)]
+    r, g, b = colorsys.hls_to_rgb((h % 360) / 360, light, sat)
     return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
 
 

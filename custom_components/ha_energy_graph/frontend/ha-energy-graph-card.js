@@ -247,23 +247,104 @@
           font-weight: 500;
           margin-bottom: 8px;
         }
-        .pie-legend {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px 14px;
-          justify-content: center;
-          margin-top: 10px;
-          font-size: 0.85rem;
+        .pie-svg {
+          display: block;
+          width: 100%;
+          max-width: 560px;
+          height: auto;
+          margin: 0 auto;
+          overflow: visible;
         }
-        .pie-legend span {
-          display: inline-flex;
+        .pie-slice, .pie-lbl {
+          transition: transform 0.18s ease, opacity 0.15s;
+        }
+        .pie-slice {
+          cursor: pointer;
+        }
+        .pie-slice:hover {
+          opacity: 0.88;
+        }
+        .pie-lbl {
+          font-weight: 700;
+          pointer-events: none;
+        }
+        .pie-lbl tspan.u {
+          font-weight: 400;
+          opacity: 0.9;
+        }
+        .pie-lbl.p {
+          font-weight: 500;
+        }
+        .pie-out {
+          fill: var(--primary-text-color, #222);
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .pie-out tspan.p {
+          font-weight: 400;
+          opacity: 0.8;
+        }
+        .pie-out.on {
+          font-weight: 800;
+        }
+        .pie-lead {
+          fill: none;
+          stroke: var(--secondary-text-color, #888);
+          stroke-width: 1.2;
+          opacity: 0.6;
+        }
+        .pie-lead.on {
+          stroke-width: 2.2;
+          opacity: 1;
+        }
+        .pie-list {
+          max-width: 520px;
+          margin: 12px auto 0;
+        }
+        .pie-row {
+          display: grid;
+          grid-template-columns: 14px minmax(0, 1fr) auto 3.8em;
           align-items: center;
-          gap: 6px;
+          gap: 10px;
+          padding: 7px 8px;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          cursor: pointer;
         }
-        .pie-legend i {
-          width: 12px;
-          height: 12px;
-          border-radius: 2px;
+        .pie-row + .pie-row {
+          border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.15));
+        }
+        .pie-row.on {
+          background: var(--secondary-background-color, rgba(127, 127, 127, 0.14));
+        }
+        .pie-row i {
+          width: 14px;
+          height: 14px;
+          border-radius: 3px;
+        }
+        .pie-row .nm {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .pie-row .kw, .pie-row .pc {
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+        }
+        .pie-row .kw {
+          opacity: 0.8;
+        }
+        .pie-row .pc {
+          font-weight: 600;
+        }
+        @media (max-width: 500px) {
+          ha-card {
+            padding: 10px;
+          }
+          .pie-row {
+            padding: 6px 4px;
+            gap: 8px;
+          }
         }
         .area-section {
           position: relative;
@@ -474,77 +555,227 @@
 
       const slices = pieData.slices;
       const total = pieData.total;
-      const width = 600, height = 340;
-      const radius = 120;
-      const cx = width / 2, cy = height / 2 - 10;
+      const W = 460;
 
-      const sv = sk('svg', {
-        viewBox: `0 0 ${width} ${height}`,
-        style: 'width:100%;height:auto;max-height:300px;display:block;margin:0 auto;'
-      }, sec);
-
-      if (total <= 0) {
+      if (total <= 0 || !slices.length) {
+        const sv0 = sk('svg', { viewBox: `0 0 ${W} 120`, class: 'pie-svg' }, sec);
         sk('text', {
-          x: cx, y: cy, 'text-anchor': 'middle', class: 'ax', 'font-size': '16'
-        }, sv).textContent = 'Pas de données d’énergie';
+          x: W / 2, y: 60, 'text-anchor': 'middle', class: 'ax', 'font-size': '16'
+        }, sv0).textContent = 'Pas de données d’énergie';
         return;
       }
 
-      let angle = -Math.PI / 2;
+      const kwhOf = (s) => (s.wh / 1000).toFixed(2);
+      const pct = (s) => {
+        const v = Number(s.percent);
+        return isFinite(v) ? v.toFixed(1) : String(s.percent);
+      };
+      // Texte blanc ou noir selon la couleur de la part (meilleur contraste, sans contour)
+      const textOn = (color) => {
+        const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(color).trim());
+        if (!m) return '#fff';
+        const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        const L = 0.2126 * lin(parseInt(m[1], 16)) + 0.7152 * lin(parseInt(m[2], 16)) + 0.0722 * lin(parseInt(m[3], 16));
+        return (1.05 / (L + 0.05)) * 1.2 >= (L + 0.05) / 0.05 ? '#fff' : '#111';
+      };
+
+      // Angles de chaque part
+      const TAU = Math.PI * 2;
+      const wedges = [];
+      let ang = -Math.PI / 2;
       slices.forEach((s) => {
         const frac = s.wh / total;
-        const tip = `${s.name} : ${(s.wh / 1000).toFixed(2)} kWh (${s.percent} %)`;
-
-        if (frac >= 0.999) {
-          const c = sk('circle', {
-            cx, cy, r: radius, fill: s.color, stroke: 'var(--card-background-color, #fff)', 'stroke-width': '1.5'
-          }, sv);
-          sk('title', {}, c).textContent = tip;
-        } else {
-          const a1 = angle + frac * 2 * Math.PI;
-          const x0 = cx + radius * Math.cos(angle);
-          const y0 = cy + radius * Math.sin(angle);
-          const x1 = cx + radius * Math.cos(a1);
-          const y1 = cy + radius * Math.sin(a1);
-          const large = a1 - angle > Math.PI ? 1 : 0;
-          const path = sk('path', {
-            d: `M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${radius},${radius} 0 ${large} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z`,
-            fill: s.color,
-            stroke: 'var(--card-background-color, #fff)',
-            'stroke-width': '1.5',
-            style: 'transition: opacity 0.15s; cursor: pointer;'
-          }, sv);
-          sk('title', {}, path).textContent = tip;
-          path.onmouseenter = () => { path.style.opacity = '0.8'; };
-          path.onmouseleave = () => { path.style.opacity = '1'; };
-
-          // Label text si tranche suffisamment grande (> 5%)
-          if (frac > 0.05) {
-            const mid = angle + frac * Math.PI;
-            const lx = cx + (radius + 18) * Math.cos(mid);
-            const ly = cy + (radius + 18) * Math.sin(mid) + 4;
-            const anchor = Math.cos(mid) >= 0 ? 'start' : 'end';
-            sk('text', {
-              x: lx.toFixed(1),
-              y: ly.toFixed(1),
-              'text-anchor': anchor,
-              class: 'ax',
-              'font-size': '11'
-            }, sv).textContent = `${(s.wh / 1000).toFixed(2)} kWh`;
-          }
-          angle = a1;
-        }
+        const full = frac >= 0.999;
+        wedges.push({ a0: ang, a1: ang + frac * TAU, mid: ang + frac * Math.PI, frac, full });
+        if (!full) ang += frac * TAU;
       });
 
-      // Légende
-      const leg = mk('div', 'pie-legend', null, sec);
-      slices.forEach((s) => {
-        const item = mk('span', null, null, leg);
-        const icon = mk('i', null, null, item);
-        icon.style.background = s.color;
-        item.appendChild(document.createTextNode(`${s.name} ${s.percent} %`));
+      // Cherche si « kWh + % » tient dans la part (rectangle entièrement dans le secteur).
+      // Retourne la position et la taille du texte, ou null s'il n'y a pas la place.
+      const fitInside = (w, s, R) => {
+        const kwh = kwhOf(s), pc = pct(s);
+        const theta = w.a1 - w.a0;
+        for (const fs of [18, 16, 14, 12.5]) {
+          const fs2 = fs * 0.8;
+          const bw = Math.max((kwh.length * 0.58 + 1.65) * fs, (pc.length + 2) * 0.58 * fs2) + 6;
+          const bh = fs + fs2 * 1.1 + 6;
+          const cand = w.full ? [0] : [0.62, 0.7, 0.78, 0.54, 0.84, 0.46];
+          for (const k of cand) {
+            const x = R * k * Math.cos(w.mid), y = R * k * Math.sin(w.mid);
+            let ok = true;
+            for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+              const px = x + sx * bw / 2, py = y + sy * bh / 2;
+              const rr = Math.hypot(px, py);
+              if (rr > R - 5) { ok = false; break; }
+              if (!w.full) {
+                let d = Math.atan2(py, px) - w.a0;
+                d = ((d % TAU) + TAU) % TAU;
+                const m = 3 / Math.max(rr, 1);
+                if (d < m || d > theta - m) { ok = false; break; }
+              }
+            }
+            if (ok) return { fs, fs2, x, y, bh };
+          }
+        }
+        return null;
+      };
+
+      // Largeur des étiquettes extérieures (kWh sur une ligne, % dessous)
+      const outW = slices.reduce((m, s) => Math.max(
+        m, kwhOf(s).length * 0.58 * 13, (pct(s).length + 2) * 0.58 * 11
+      ), 0) + 4;
+      const padOut = outW + 16;
+      const MAXR = 200;
+
+      // Mise en page : le camembert prend toute la largeur ; on ne réserve de la place
+      // sur un côté que s'il faut une étiquette extérieure de ce côté.
+      let needL = false, needR = false, R = 150, cx = W / 2, plan = [];
+      for (let it = 0; it < 4; it++) {
+        const padL = needL ? padOut : 8, padR = needR ? padOut : 8;
+        const avail = W - padL - padR;
+        R = Math.min(MAXR, avail / 2);
+        cx = padL + avail / 2;
+        plan = wedges.map((w, i) => fitInside(w, slices[i], R));
+        let nl = false, nr = false;
+        plan.forEach((p, i) => {
+          if (!p) { if (Math.cos(wedges[i].mid) >= 0) nr = true; else nl = true; }
+        });
+        if ((!nl || needL) && (!nr || needR)) break;
+        needL = needL || nl;
+        needR = needR || nr;
+      }
+      const cy = R + 26;
+      const H = Math.round(2 * R + 52);
+
+      const sv = sk('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pie-svg' }, sec);
+      const gSlices = sk('g', {}, sv);
+      const gLead = sk('g', {}, sv);
+      const gLabels = sk('g', {}, sv);
+      const list = mk('div', 'pie-list', null, sec);
+
+      const items = [];
+      const outs = [];
+      let selected = -1;
+      const select = (i) => {
+        selected = selected === i ? -1 : i;
+        items.forEach((it, k) => {
+          const on = k === selected;
+          const tr = on ? `translate(${it.dx}px, ${it.dy}px)` : '';
+          it.path.style.transform = tr;
+          it.labels.forEach((l) => { l.style.transform = tr; });
+          if (it.out) it.out.classList.toggle('on', on);
+          if (it.lead) it.lead.classList.toggle('on', on);
+          it.row.classList.toggle('on', on);
+        });
+      };
+
+      slices.forEach((s, i) => {
+        const w = wedges[i];
+        const kwh = kwhOf(s);
+        const tip = `${s.name} : ${kwh} kWh (${s.percent} %)`;
+        const c = Math.cos(w.mid), sn = Math.sin(w.mid);
+
+        let path;
+        if (w.full) {
+          path = sk('circle', { cx, cy, r: R, fill: s.color }, gSlices);
+        } else {
+          const x0 = cx + R * Math.cos(w.a0);
+          const y0 = cy + R * Math.sin(w.a0);
+          const x1 = cx + R * Math.cos(w.a1);
+          const y1 = cy + R * Math.sin(w.a1);
+          const large = w.a1 - w.a0 > Math.PI ? 1 : 0;
+          path = sk('path', {
+            d: `M${cx.toFixed(1)},${cy.toFixed(1)} L${x0.toFixed(1)},${y0.toFixed(1)} A${R.toFixed(1)},${R.toFixed(1)} 0 ${large} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z`,
+            fill: s.color
+          }, gSlices);
+        }
+        path.setAttribute('class', 'pie-slice');
+        sk('title', {}, path).textContent = tip;
+
+        // Étiquette dans la part (kWh + %) quand il y a la place
+        const labels = [];
+        const fit = plan[i];
+        if (fit) {
+          const fill = textOn(s.color);
+          const b1 = cy + fit.y - fit.bh / 2 + 3 + 0.8 * fit.fs;
+          const b2 = b1 + 0.2 * fit.fs + fit.fs2;
+          const x = (cx + fit.x).toFixed(1);
+          const t1 = sk('text', {
+            x, y: b1.toFixed(1), 'text-anchor': 'middle', class: 'pie-lbl', fill, 'font-size': fit.fs
+          }, gLabels);
+          t1.appendChild(document.createTextNode(kwh));
+          const u = sk('tspan', { class: 'u', 'font-size': (fit.fs * 0.72).toFixed(1), dx: 2 }, t1);
+          u.appendChild(document.createTextNode('kWh'));
+          const t2 = sk('text', {
+            x, y: b2.toFixed(1), 'text-anchor': 'middle', class: 'pie-lbl p', fill, 'font-size': fit.fs2.toFixed(1)
+          }, gLabels);
+          t2.textContent = `${pct(s)} %`;
+          labels.push(t1, t2);
+        } else {
+          outs.push({ i, s, c, sn, right: c >= 0, y: cy + (R + 8) * sn });
+        }
+
+        // Ligne du tableau (toutes les valeurs)
+        const row = mk('div', 'pie-row', null, list);
+        const sw = mk('i', null, null, row);
+        sw.style.background = s.color;
+        mk('span', 'nm', s.name, row);
+        mk('span', 'kw', `${kwh} kWh`, row);
+        mk('span', 'pc', `${pct(s)} %`, row);
+        row.title = tip;
+
+        items.push({
+          path, labels, row, out: null, lead: null,
+          dx: (c * 8).toFixed(1),
+          dy: (sn * 8).toFixed(1)
+        });
+        path.addEventListener('click', () => select(i));
+        row.addEventListener('click', () => select(i));
+      });
+
+      // Étiquettes extérieures, seulement pour les parts trop petites : une colonne de chaque
+      // côté, décalées verticalement pour ne pas se chevaucher, reliées à leur part par un trait.
+      // Si une colonne est trop chargée, on garde uniquement le kWh (le % reste dans le tableau).
+      [false, true].forEach((right) => {
+        const arr = outs.filter((o) => o.right === right).sort((a, b) => a.y - b.y);
+        if (!arr.length) return;
+        const two = arr.length * 27 <= H - 28;
+        const gap = two ? 27 : 15;
+        const ymin = two ? 16 : 10, ymax = H - (two ? 16 : 8);
+        arr.forEach((o, k) => { o.ly = Math.max(o.y, k ? arr[k - 1].ly + gap : ymin); });
+        for (let k = arr.length - 1; k >= 0; k--) {
+          const lim = k === arr.length - 1 ? ymax : arr[k + 1].ly - gap;
+          if (arr[k].ly > lim) arr[k].ly = lim;
+        }
+        const xcol = right ? cx + R + 12 : cx - R - 12;
+        arr.forEach((o) => {
+          const p0 = [cx + R * o.c, cy + R * o.sn];
+          const p1 = [cx + (R + 8) * o.c, cy + (R + 8) * o.sn];
+          const p2 = [xcol + (right ? -3 : 3), two ? o.ly - 4 : o.ly];
+          const lead = sk('path', {
+            d: `M${p0[0].toFixed(1)},${p0[1].toFixed(1)} L${p1[0].toFixed(1)},${p1[1].toFixed(1)} L${p2[0].toFixed(1)},${p2[1].toFixed(1)}`,
+            class: 'pie-lead'
+          }, gLead);
+          const t = sk('text', {
+            x: xcol.toFixed(1),
+            y: (two ? o.ly - 1 : o.ly + 4.5).toFixed(1),
+            'text-anchor': right ? 'start' : 'end',
+            class: 'pie-out',
+            'font-size': 13
+          }, gLabels);
+          t.appendChild(document.createTextNode(kwhOf(o.s)));
+          if (two) {
+            const p = sk('tspan', { class: 'p', x: xcol.toFixed(1), dy: 12.5, 'font-size': 11 }, t);
+            p.appendChild(document.createTextNode(`${pct(o.s)} %`));
+          }
+          sk('title', {}, t).textContent = `${o.s.name} : ${kwhOf(o.s)} kWh (${o.s.percent} %)`;
+          t.addEventListener('click', () => select(o.i));
+          items[o.i].out = t;
+          items[o.i].lead = lead;
+        });
       });
     }
+
 
     _renderArea(container) {
       const areaData = this._data.area;
