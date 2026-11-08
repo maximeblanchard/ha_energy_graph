@@ -107,6 +107,7 @@ def _slices(data: dict[str, Any]) -> list[tuple[str, float, str]]:
     other = data.get("other")
     if other and other["wh"] > 0:
         sl.append((OTHER_LABEL, other["wh"], OTHER_COLOR))
+    sl.sort(key=lambda s: s[1], reverse=True)
     return sl
 
 

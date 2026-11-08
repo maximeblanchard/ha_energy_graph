@@ -37,7 +37,7 @@ async def _async_register_lovelace_resource(hass: HomeAssistant) -> None:
     try:
         if not lovelace.resources.loaded:
             await lovelace.resources.async_load()
-        url = f"{CARD_URL}?v=1.8.0"
+        url = f"{CARD_URL}?v=1.8.1"
         for resource in lovelace.resources.async_items():
             if resource.get("url", "").startswith(CARD_URL):
                 if resource.get("url") != url:
@@ -64,7 +64,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         else:
             hass.http.register_static_path(CARD_URL, str(FRONTEND_FILE), cache_headers=False)
 
-        add_extra_js_url(hass, f"{CARD_URL}?v=1.8.0")
+        add_extra_js_url(hass, f"{CARD_URL}?v=1.8.1")
 
         async def _register_fe(_event=None) -> None:
             await _async_register_lovelace_resource(hass)

@@ -16,5 +16,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/maximeblanchard/ha_energy_graph/issues",
   "requirements": [],
-  "version": "1.8.0"
+  "version": "1.8.1"
 }

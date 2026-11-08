@@ -27,6 +27,8 @@ def pie_payload(data: dict[str, Any]) -> dict[str, Any]:
     if other and other.get("wh", 0) > 0:
         slices.append({"name": OTHER_LABEL, "wh": round(other["wh"], 1), "color": OTHER_COLOR})
 
+    slices.sort(key=lambda s: s["wh"], reverse=True)
+
     total = sum(s["wh"] for s in slices)
     for s in slices:
         s["percent"] = round(s["wh"] / total * 100, 2) if total > 0 else 0.0

@@ -553,7 +553,7 @@
       const sec = mk('div', 'pie-section', null, container);
       mk('div', 'pie-title', pieData.title, sec);
 
-      const slices = pieData.slices;
+      const slices = (pieData.slices || []).slice().sort((a, b) => (b.wh || 0) - (a.wh || 0));
       const total = pieData.total;
       const W = 460;
 
