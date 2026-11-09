@@ -41,7 +41,17 @@
       this.attachShadow({ mode: 'open' });
       this._config = {};
       this._view = 'both'; // 'both', 'area', 'pie'
+      this._period = 'day'; // 'day', '7d', 'month', 'year', 'custom'
       this._selectedDate = null;
+      this._selectedEnd = null;
+      this._selectedMonth = null;
+      this._selectedYear = null;
+      this._selectedStart = null;
+      try {
+        this._optionsOpen = localStorage.getItem('ha_eg_card_opt_open') === '1';
+      } catch (e) {
+        this._optionsOpen = false;
+      }
       this._data = null;
       this._hass = null;
       this._loading = false;
@@ -79,6 +89,9 @@
         config
       );
       this._view = this._config.view || 'both';
+      if (this._config.period && ['day', '7d', 'month', 'year', 'custom'].includes(this._config.period)) {
+        this._period = this._config.period;
+      }
       if (this._initialized) {
         this._loadData();
       }
@@ -123,12 +136,22 @@
       try {
         const payload = {
           type: 'ha_energy_graph/data',
+          period: this._period || 'day',
         };
         if (this._config.entry_id) {
           payload.entry_id = this._config.entry_id;
         }
-        if (this._selectedDate) {
-          payload.date = this._selectedDate;
+        if (this._period === '7d') {
+          if (this._selectedEnd) payload.end = this._selectedEnd;
+        } else if (this._period === 'month') {
+          if (this._selectedMonth) payload.month = this._selectedMonth;
+        } else if (this._period === 'year') {
+          if (this._selectedYear) payload.year = this._selectedYear;
+        } else if (this._period === 'custom') {
+          if (this._selectedStart) payload.start = this._selectedStart;
+          if (this._selectedEnd) payload.end = this._selectedEnd;
+        } else {
+          if (this._selectedDate) payload.date = this._selectedDate;
         }
         const res = await this._hass.callWS(payload);
         this._data = res;
@@ -197,6 +220,113 @@
           color: var(--primary-text-color);
           font-weight: 500;
           box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .period-badge-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color);
+          border: 1px solid var(--divider-color, rgba(127,127,127,0.25));
+          border-radius: 9999px;
+          padding: 5px 14px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .period-badge-btn:hover, .nav-btn:not(:disabled):hover {
+          border-color: var(--primary-color, #03a9f4);
+        }
+        .period-badge-btn .badge-arrow {
+          font-size: 0.65rem;
+          opacity: 0.7;
+          transition: transform 0.2s ease;
+        }
+        .period-badge-btn.open .badge-arrow {
+          transform: rotate(180deg);
+        }
+        .opt-panel {
+          background: var(--secondary-background-color, rgba(127,127,127,0.08));
+          border: 1px solid var(--divider-color, rgba(127,127,127,0.2));
+          border-radius: 10px;
+          padding: 10px 14px;
+          margin-bottom: 14px;
+        }
+        .opt-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 8px;
+          flex-wrap: wrap;
+        }
+        .opt-row:last-of-type {
+          margin-bottom: 4px;
+        }
+        .opt-lbl {
+          font-size: 0.82rem;
+          font-weight: 600;
+          opacity: 0.85;
+          min-width: 70px;
+        }
+        .pills {
+          display: inline-flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .pill {
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color);
+          border: 1px solid var(--divider-color, rgba(127,127,127,0.25));
+          border-radius: 9999px;
+          padding: 3px 10px;
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .pill:hover {
+          border-color: var(--primary-color, #03a9f4);
+        }
+        .pill.active {
+          background: var(--primary-color, #03a9f4);
+          color: #fff;
+          border-color: var(--primary-color, #03a9f4);
+          font-weight: 600;
+        }
+        .date-ctrls {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          font-size: 0.85rem;
+        }
+        .btn-apply {
+          background: var(--primary-color, #03a9f4);
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          padding: 3px 10px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-hide-opt {
+          display: block;
+          margin-left: auto;
+          background: transparent;
+          border: none;
+          color: var(--secondary-text-color, #888);
+          font-size: 0.75rem;
+          cursor: pointer;
+          padding: 2px 4px;
+        }
+        .btn-hide-opt:hover {
+          color: var(--primary-text-color);
+          text-decoration: underline;
+        }
+        .gear-btn {
+          font-size: 1rem;
+          padding: 4px 8px;
         }
         .nav-bar {
           display: flex;
@@ -467,10 +597,10 @@
       const titleText = this._config.title || (this._data ? this._data.title : "Graphique d'énergie");
       mk('h2', 'card-title', titleText, header);
 
-      // Sélecteur d'onglets (Tout, Aires, Camembert)
+      // Sélecteur d'onglets (Tout, Évolution/Aires, Camembert)
       const tabs = mk('div', 'tabs', null, header);
       const bBoth = mk('button', `tab-btn ${this._view === 'both' ? 'active' : ''}`, 'Tout', tabs);
-      const bArea = mk('button', `tab-btn ${this._view === 'area' ? 'active' : ''}`, 'Aires', tabs);
+      const bArea = mk('button', `tab-btn ${this._view === 'area' ? 'active' : ''}`, this._period === 'day' ? 'Aires' : 'Évolution', tabs);
       const bPie = mk('button', `tab-btn ${this._view === 'pie' ? 'active' : ''}`, 'Camembert', tabs);
 
       bBoth.onclick = () => { this._view = 'both'; this._render(); };
@@ -486,43 +616,152 @@
         return;
       }
 
-      // Barre de navigation temporelle
+      // Barre de navigation temporelle compacte
       const nav = mk('div', 'nav-bar', null, card);
       const bPrev = mk('button', 'nav-btn', '◀', nav);
-      bPrev.title = 'Jour précédent';
-      bPrev.onclick = () => {
-        const d = new Date(this._data.date);
-        d.setDate(d.getDate() - 1);
-        this._selectedDate = d.toISOString().split('T')[0];
-        this._loadData();
-      };
+      bPrev.title = 'Période précédente';
+      bPrev.onclick = () => { this._stepPeriod(-1); };
 
-      const dateInp = mk('input', 'date-input', null, nav);
-      dateInp.type = 'date';
-      dateInp.value = this._data.date;
-      dateInp.max = this._data.today;
-      dateInp.onchange = () => {
-        if (dateInp.value) {
-          this._selectedDate = dateInp.value;
-          this._loadData();
-        }
+      const isCurrent = this._data && (this._data.is_current !== undefined ? this._data.is_current : this._data.is_today);
+      let periodLabel = "Aujourd'hui";
+      if (this._period === 'day') {
+        periodLabel = this._data.is_today ? "Aujourd'hui" : this._formatDateFR(this._data.date);
+      } else if (this._period === '7d') {
+        periodLabel = isCurrent ? "7 derniers jours" : `7j au ${this._formatShortDate(this._data.end_date)}`;
+      } else if (this._period === 'month') {
+        periodLabel = this._formatMonthFR(this._data.date || this._data.start_date);
+      } else if (this._period === 'year') {
+        periodLabel = `Année ${(this._data.date || this._data.start_date || '').slice(0, 4)}`;
+      } else if (this._period === 'custom') {
+        periodLabel = `${this._formatShortDate(this._data.start_date)} – ${this._formatShortDate(this._data.end_date)}`;
+      }
+
+      const bToggle = mk('button', `period-badge-btn ${this._optionsOpen ? 'open' : ''}`, null, nav);
+      mk('span', 'badge-cal', '📅', bToggle);
+      mk('span', 'badge-txt', periodLabel, bToggle);
+      mk('span', 'badge-arrow', '▼', bToggle);
+      bToggle.title = 'Changer de période ou afficher/masquer les options';
+      bToggle.onclick = () => {
+        this._optionsOpen = !this._optionsOpen;
+        try { localStorage.setItem('ha_eg_card_opt_open', this._optionsOpen ? '1' : '0'); } catch(e) {}
+        this._render();
       };
 
       const bNext = mk('button', 'nav-btn', '▶', nav);
-      bNext.title = 'Jour suivant';
-      bNext.disabled = this._data.date >= this._data.today;
-      bNext.onclick = () => {
-        const d = new Date(this._data.date);
-        d.setDate(d.getDate() + 1);
-        this._selectedDate = d.toISOString().split('T')[0];
-        this._loadData();
+      bNext.title = 'Période suivante';
+      bNext.disabled = isCurrent;
+      bNext.onclick = () => { this._stepPeriod(1); };
+
+      if (!isCurrent) {
+        const bToday = mk('button', 'today-btn', this._period === 'day' ? "Aujourd'hui" : "Actuel", nav);
+        bToday.title = "Revenir à la période actuelle";
+        bToday.onclick = () => {
+          this._resetToCurrent();
+          this._loadData();
+        };
+      }
+
+      const bGear = mk('button', 'nav-btn gear-btn', '⚙', nav);
+      bGear.title = "Options d'affichage et sélection de période";
+      bGear.onclick = () => {
+        this._optionsOpen = !this._optionsOpen;
+        try { localStorage.setItem('ha_eg_card_opt_open', this._optionsOpen ? '1' : '0'); } catch(e) {}
+        this._render();
       };
 
-      if (!this._data.is_today) {
-        const bToday = mk('button', 'today-btn', "Aujourd'hui", nav);
-        bToday.onclick = () => {
-          this._selectedDate = this._data.today;
-          this._loadData();
+      // Panneau d'options rétractable
+      if (this._optionsOpen) {
+        const optPanel = mk('div', 'opt-panel', null, card);
+
+        // Ligne 1 : Choix de la période
+        const rowP = mk('div', 'opt-row', null, optPanel);
+        mk('span', 'opt-lbl', 'Période :', rowP);
+        const pillsP = mk('div', 'pills', null, rowP);
+        const periods = [
+          ['day', 'Jour'],
+          ['7d', '7 jours'],
+          ['month', 'Mois'],
+          ['year', 'Année'],
+          ['custom', 'Personnalisé']
+        ];
+        periods.forEach(([k, label]) => {
+          const pBtn = mk('button', `pill ${this._period === k ? 'active' : ''}`, label, pillsP);
+          pBtn.onclick = () => {
+            this._period = k;
+            this._resetToCurrent();
+            this._loadData();
+          };
+        });
+
+        // Ligne 2 : Sélecteur de date adapté
+        const rowD = mk('div', 'opt-row', null, optPanel);
+        mk('span', 'opt-lbl', 'Sélecteur :', rowD);
+        const dCtrl = mk('div', 'date-ctrls', null, rowD);
+
+        if (this._period === 'day') {
+          const inp = mk('input', 'date-input', null, dCtrl);
+          inp.type = 'date';
+          inp.value = this._data.date;
+          inp.max = this._data.today;
+          inp.onchange = () => {
+            if (inp.value) { this._selectedDate = inp.value; this._loadData(); }
+          };
+        } else if (this._period === '7d') {
+          mk('span', null, 'Fin le :', dCtrl);
+          const inp = mk('input', 'date-input', null, dCtrl);
+          inp.type = 'date';
+          inp.value = this._data.end_date || this._data.today;
+          inp.max = this._data.today;
+          inp.onchange = () => {
+            if (inp.value) { this._selectedEnd = inp.value; this._loadData(); }
+          };
+        } else if (this._period === 'month') {
+          const inp = mk('input', 'date-input', null, dCtrl);
+          inp.type = 'month';
+          const curM = (this._data.date || this._data.start_date || this._data.today).slice(0, 7);
+          inp.value = curM;
+          inp.max = this._data.today.slice(0, 7);
+          inp.onchange = () => {
+            if (inp.value) { this._selectedMonth = inp.value; this._loadData(); }
+          };
+        } else if (this._period === 'year') {
+          const inp = mk('input', 'date-input', null, dCtrl);
+          inp.type = 'number';
+          inp.min = '2020';
+          inp.max = this._data.today.slice(0, 4);
+          inp.value = (this._data.date || this._data.start_date || this._data.today).slice(0, 4);
+          inp.style.width = '85px';
+          inp.onchange = () => {
+            if (inp.value) { this._selectedYear = inp.value; this._loadData(); }
+          };
+        } else if (this._period === 'custom') {
+          mk('span', null, 'Du', dCtrl);
+          const sInp = mk('input', 'date-input', null, dCtrl);
+          sInp.type = 'date';
+          sInp.value = this._data.start_date || this._data.today;
+          sInp.max = this._data.today;
+
+          mk('span', null, 'au', dCtrl);
+          const eInp = mk('input', 'date-input', null, dCtrl);
+          eInp.type = 'date';
+          eInp.value = this._data.end_date || this._data.today;
+          eInp.max = this._data.today;
+
+          const bApply = mk('button', 'btn-apply', 'OK', dCtrl);
+          bApply.onclick = () => {
+            if (sInp.value && eInp.value) {
+              this._selectedStart = sInp.value;
+              this._selectedEnd = eInp.value;
+              this._loadData();
+            }
+          };
+        }
+
+        const bHide = mk('button', 'btn-hide-opt', 'Masquer les options ✕', optPanel);
+        bHide.onclick = () => {
+          this._optionsOpen = false;
+          try { localStorage.setItem('ha_eg_card_opt_open', '0'); } catch(e) {}
+          this._render();
         };
       }
 
@@ -540,9 +779,259 @@
         this._renderPie(card);
       }
 
-      // 2. Vue Aires empilées
+      // 2. Vue Aires empilées (si Jour) ou Colonnes empilées (si multi-jours)
       if (this._view === 'both' || this._view === 'area') {
-        this._renderArea(card);
+        if (this._period === 'day') {
+          this._renderArea(card);
+        } else {
+          this._renderBars(card);
+        }
+      }
+    }
+
+
+    _stepPeriod(dir) {
+      if (!this._data) return;
+      const today = this._data.today;
+      if (this._period === 'day') {
+        const cur = this._data.date || today;
+        const [y, m, d] = cur.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        dt.setUTCDate(dt.getUTCDate() + dir);
+        let nStr = dt.toISOString().split('T')[0];
+        if (nStr > today) nStr = today;
+        this._selectedDate = nStr;
+      } else if (this._period === '7d') {
+        const cur = this._data.end_date || today;
+        const [y, m, d] = cur.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        dt.setUTCDate(dt.getUTCDate() + dir * 7);
+        let nStr = dt.toISOString().split('T')[0];
+        if (nStr > today) nStr = today;
+        this._selectedEnd = nStr;
+      } else if (this._period === 'month') {
+        const cur = (this._data.date || this._data.start_date || today).slice(0, 7);
+        let [y, m] = cur.split('-').map(Number);
+        m += dir;
+        if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+        let nStr = `${y}-${pad(m)}`;
+        if (nStr > today.slice(0, 7)) nStr = today.slice(0, 7);
+        this._selectedMonth = nStr;
+      } else if (this._period === 'year') {
+        const cur = (this._data.date || this._data.start_date || today).slice(0, 4);
+        let y = parseInt(cur, 10) + dir;
+        const maxYear = parseInt(today.slice(0, 4), 10);
+        if (y > maxYear) y = maxYear;
+        this._selectedYear = y;
+      } else if (this._period === 'custom') {
+        const s = this._data.start_date || today;
+        const e = this._data.end_date || today;
+        const dtS = new Date(s);
+        const dtE = new Date(e);
+        const spanDays = Math.max(1, Math.round((dtE - dtS) / 86400000) + 1);
+        dtS.setDate(dtS.getDate() + dir * spanDays);
+        dtE.setDate(dtE.getDate() + dir * spanDays);
+        const cap = new Date(today);
+        if (dtE > cap) dtE.setTime(cap.getTime());
+        this._selectedStart = dtS.toISOString().split('T')[0];
+        this._selectedEnd = dtE.toISOString().split('T')[0];
+      }
+      this._loadData();
+    }
+
+    _resetToCurrent() {
+      this._selectedDate = null;
+      this._selectedEnd = null;
+      this._selectedMonth = null;
+      this._selectedYear = null;
+      this._selectedStart = null;
+    }
+
+    _formatDateFR(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      const MOIS = ["", "janv.", "févr.", "mars", "avril", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+      return `${d} ${MOIS[m] || ''} ${y}`;
+    }
+
+    _formatMonthFR(iso) {
+      if (!iso) return '';
+      const [y, m] = iso.slice(0, 7).split('-').map(Number);
+      const MOIS = ["", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+      return `${MOIS[m] || ''} ${y}`;
+    }
+
+    _formatShortDate(iso) {
+      if (!iso) return '';
+      const parts = iso.split('-');
+      if (parts.length >= 3) return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+      return iso;
+    }
+
+    _renderBars(container) {
+      const areaData = this._data.area;
+      if (!areaData || !areaData.layers) return;
+
+      const sec = mk('div', 'area-section', null, container);
+      mk('div', 'area-title', areaData.title || 'Consommation par appareil', sec);
+
+      const layers = areaData.layers.filter(l => !this._S.hidden[l.name] && l.wh && l.wh.some(v => v > 0));
+      const n = areaData.n || (layers[0] ? layers[0].wh.length : 0);
+      const labels = areaData.bucket_labels || [];
+
+      const leg = mk('div', 'leg', null, sec);
+      areaData.layers.forEach((L) => {
+        const sp = mk('span', null, null, leg);
+        const on = !this._S.hidden[L.name];
+        sp.className = on ? '' : 'off';
+        const sw = mk('i', null, null, sp);
+        sw.style.background = L.color;
+        mk('span', null, L.name, sp);
+        sp.onclick = () => {
+          this._S.hidden[L.name] = !this._S.hidden[L.name];
+          sec.remove();
+          this._renderBars(container);
+        };
+      });
+
+      if (n <= 0 || !layers.length) {
+        mk('div', 'hint', 'Pas de données de consommation pour cette période.', sec);
+        return;
+      }
+
+      const wrap = mk('div', 'wrap', null, sec);
+      const tip = mk('div', 'tip', null, wrap);
+
+      const W = 900, H = 340;
+      const ml = 65, mr = 20, mt = 20, mb = 45;
+      const pw = W - ml - mr, ph = H - mt - mb;
+
+      const sv = sk('svg', { viewBox: `0 0 ${W} ${H}`, style: 'width:100%;height:auto;display:block;' }, wrap);
+
+      const cols = [];
+      const colTotals = [];
+      for (let i = 0; i < n; i++) {
+        const vals = layers.map(l => (l.wh[i] || 0) / 1000);
+        cols.push(vals);
+        colTotals.push(vals.reduce((a, b) => a + b, 0));
+      }
+
+      let maxVal = Math.max(...colTotals, 1);
+      function niceMax(v) {
+        if (v <= 0) return 1;
+        const exp = Math.pow(10, Math.floor(Math.log10(v)));
+        for (const m of [1, 2, 2.5, 5, 10]) {
+          if (v <= m * exp) return m * exp;
+        }
+        return 10 * exp;
+      }
+      const top = niceMax(maxVal);
+
+      function py(v) {
+        return mt + ph - (v / top) * ph;
+      }
+
+      for (let k = 0; k <= 5; k++) {
+        const v = (top * k) / 5;
+        const y = py(v);
+        sk('line', { class: 'gl', x1: ml, x2: ml + pw, y1: y.toFixed(1), y2: y.toFixed(1) }, sv);
+        const t = sk('text', { class: 'ax', x: ml - 8, y: (y + 4).toFixed(1), 'text-anchor': 'end' }, sv);
+        t.textContent = `${v % 1 === 0 ? v : v.toFixed(1)} kWh`;
+      }
+
+      const slotW = pw / n;
+      const barW = Math.min(Math.max(slotW * 0.72, 3), 44);
+
+      const gBars = sk('g', {}, sv);
+      for (let i = 0; i < n; i++) {
+        const cx = ml + (i + 0.5) * slotW;
+        let cum = 0;
+        layers.forEach((l, li) => {
+          const val = cols[i][li];
+          if (val <= 0) return;
+          const y0 = py(cum);
+          const y1 = py(cum + val);
+          const h = Math.max(y0 - y1, 1);
+          sk('rect', {
+            x: (cx - barW / 2).toFixed(1),
+            y: y1.toFixed(1),
+            width: barW.toFixed(1),
+            height: h.toFixed(1),
+            fill: l.color,
+            rx: 2
+          }, gBars);
+          cum += val;
+        });
+      }
+
+      const stepLbl = n > 25 ? (n <= 35 ? 2 : Math.ceil(n / 15)) : 1;
+      for (let i = 0; i < n; i += stepLbl) {
+        const cx = ml + (i + 0.5) * slotW;
+        const lbl = labels[i] || String(i + 1);
+        const t = sk('text', { class: 'ax', x: cx.toFixed(1), y: (mt + ph + 22).toFixed(1), 'text-anchor': 'middle' }, sv);
+        t.textContent = lbl;
+      }
+
+      const gHover = sk('g', {}, sv);
+      for (let i = 0; i < n; i++) {
+        const cx = ml + (i + 0.5) * slotW;
+        const hRect = sk('rect', {
+          x: (cx - slotW / 2).toFixed(1),
+          y: mt.toFixed(1),
+          width: slotW.toFixed(1),
+          height: ph.toFixed(1),
+          fill: 'transparent',
+          style: 'cursor:pointer;'
+        }, gHover);
+
+        hRect.onmouseenter = (e) => {
+          hRect.setAttribute('fill', 'rgba(127,127,127,0.15)');
+          tip.style.display = 'block';
+          tip.innerHTML = '';
+          const lbl = labels[i] || String(i + 1);
+          const tot = colTotals[i];
+          const titleDiv = mk('div', null, null, tip);
+          titleDiv.style.fontWeight = 'bold';
+          titleDiv.style.marginBottom = '4px';
+          titleDiv.textContent = `${lbl} — Total : ${tot.toFixed(2)} kWh`;
+
+          const ranked = layers.map((l, li) => ({ name: l.name, color: l.color, val: cols[i][li] }))
+            .filter(x => x.val >= 0.005)
+            .sort((a, b) => b.val - a.val);
+
+          ranked.forEach(r => {
+            const row = mk('div', null, null, tip);
+            const lSpan = mk('span', null, null, row);
+            const dot = mk('i', null, null, lSpan);
+            dot.style.display = 'inline-block';
+            dot.style.width = '8px';
+            dot.style.height = '8px';
+            dot.style.borderRadius = '2px';
+            dot.style.background = r.color;
+            dot.style.marginRight = '6px';
+            lSpan.appendChild(document.createTextNode(r.name));
+
+            const pct = tot > 0 ? (r.val / tot * 100).toFixed(1) : '0';
+            const rSpan = mk('span', null, `${r.val.toFixed(2)} kWh (${pct}%)`, row);
+            rSpan.style.fontWeight = '500';
+          });
+
+          const bRect = wrap.getBoundingClientRect();
+          const posX = e.clientX - bRect.left;
+          if (posX > bRect.width / 2) {
+            tip.style.left = 'auto';
+            tip.style.right = `${bRect.width - posX + 10}px`;
+          } else {
+            tip.style.right = 'auto';
+            tip.style.left = `${posX + 10}px`;
+          }
+          tip.style.top = '10px';
+        };
+
+        hRect.onmouseleave = () => {
+          hRect.setAttribute('fill', 'transparent');
+          tip.style.display = 'none';
+        };
       }
     }
 

@@ -50,20 +50,32 @@ Pour l'ajouter à votre tableau de bord :
 ```yaml
 type: custom:ha-energy-graph-card
 # Options facultatives :
-view: both        # 'both' (les deux), 'area' (aires seulement) ou 'pie' (camembert seulement)
+view: both        # 'both' (les deux), 'area' (évolution seulement) ou 'pie' (camembert seulement)
+period: day       # 'day' (défaut), '7d', 'month', 'year', 'custom'
 title: "Énergie"  # Titre personnalisé de la carte
 ```
 
 ### Fonctionnalités de la carte :
-- **Onglets en en-tête :** basculez instantanément entre `Tout`, `Aires` et `Camembert`.
-- **Navigation par date :** parcourez n'importe quel jour passé avec les flèches ◀ ▶ ou le sélecteur calendrier.
-- **Aires empilées interactives :**
+- **Navigation temporelle & Périodes :**
+  - **Vue Jour** (`day`) : puissance moyenne en Watts (aires empilées) + camembert du jour.
+  - **Vue 7 jours** (`7d`) : consommation journalière en kWh sur 7 jours (colonnes empilées) + camembert.
+  - **Vue Mois** (`month`) : consommation jour par jour sur le mois sélectionné (colonnes empilées) + camembert.
+  - **Vue Année** (`year`) : consommation mois par mois sur l'année (colonnes empilées) + camembert annuel.
+  - **Vue Personnalisée** (`custom`) : plage de dates au choix (*Du ... Au ...*).
+- **Ergonomie soignée (UX) :**
+  - Barre de navigation épurée par défaut pour ne pas surcharger vos tableaux de bord.
+  - Bouton central « 📅 Période » et bouton « ⚙ » pour déplier/replier le **panneau d'options rétractable**.
+  - Mémorisation de l'état ouvert/fermé du panneau dans le navigateur.
+- **Onglets en en-tête :** basculez instantanément entre `Tout`, `Évolution` et `Camembert`.
+- **Aires empilées interactives (mode Jour) :**
   - Sélecteurs de résolution (5 min à 1 h) et de lissage.
   - Échelle linéaire ou compressée ($\sqrt{x}$) pour faire ressortir les veilles face aux gros pics.
   - Bouton de regroupement par catégorie de couleur.
   - Zoom & déplacement à la souris ou au doigt sur mobile (sélection rectangulaire, boutons $+/-$, Ctrl+molette).
   - Infobulle flottante détaillée avec horodatage, liste triée des appareils et total en Watts.
   - Légende cliquable pour masquer/afficher un appareil individuellement.
+- **Colonnes empilées interactives (modes 7j / Mois / An / Personnalisé) :**
+  - Histogramme empilé en kWh avec légende cliquable et infobulles complètes par jour/mois.
 - **Camembert dynamique :** répartition en pourcentages et kWh avec infobulles au survol.
 
 ---

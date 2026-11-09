@@ -46,15 +46,16 @@ svg{display:block}
 
 
 def area_payload(data: dict[str, Any]) -> dict[str, Any]:
-    """Données du graphique en aires envoyées au navigateur (puissance moyenne par tranche)."""
-    bucket_s = data["bucket_s"]
-    k = 3600 / bucket_s
+    """Données du graphique en aires / colonnes envoyées au navigateur."""
+    bucket_s = data.get("bucket_s", 300)
+    k = (3600 / bucket_s) if bucket_s > 0 else 1.0
     layers = [
         {
             "name": d["name"],
             "color": d["color"],
             "cat": d["category"],
             "w": [round(x * k, 1) for x in d["series"]],
+            "wh": [round(x, 1) for x in d["series"]],
         }
         for d in data["devices"]
     ]
@@ -65,15 +66,30 @@ def area_payload(data: dict[str, Any]) -> dict[str, Any]:
                 "color": OTHER_COLOR,
                 "cat": "_other",
                 "w": [round(x * k, 1) for x in data["other"]["series"]],
+                "wh": [round(x, 1) for x in data["other"]["series"]],
             }
         )
     start = data["start"]
+    pt = data.get("period_type", "day")
+    if pt == "year":
+        title = f"Consommation mensuelle — Année {start.year}"
+    elif pt == "month":
+        title = f"Consommation journalière — {start.month}/{start.year}"
+    elif pt == "7d":
+        title = "Consommation journalière — 7 derniers jours"
+    elif pt == "custom":
+        title = "Consommation journalière"
+    else:
+        title = f"Puissance moyenne — {start.day}/{start.month}/{start.year}"
+
     return {
+        "period_type": pt,
+        "bucket_labels": data.get("bucket_labels", []),
         "bucket_s": bucket_s,
-        "day_seconds": data["day_seconds"],
-        "n": data["n"],
-        "title": f"Puissance moyenne — {start.day}/{start.month}/{start.year}",
-        "layers": [layer for layer in layers if any(layer["w"])],
+        "day_seconds": data.get("day_seconds", 86400),
+        "n": data.get("n", 0),
+        "title": title,
+        "layers": [layer for layer in layers if any(layer["wh"]) or any(layer["w"])],
         "cats": {
             **{
                 key: [CATEGORIES[key][0], category_color(key, 0, 1)]
